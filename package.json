@@ -1,0 +1,27 @@
+{
+  "name": "sk-depth-gauge",
+  "version": "1.0.0",
+  "description": "Depth gauge with trend graphic",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "Marco Bergman",
+    "email": "marcobergman@gmail.com"
+  },  "license": "ISC",
+  "keywords": [
+    "signalk-node-server-plugin",
+    "signalk-webapp",
+    "signalk-category-web-instruments"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcobergman/sk-depth-gauge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marcobergman/sk-depth-gauge/issues"
+  },
+  "homepage": "https://github.com/marcobergman/sk-depth-gauge#readme",
+  "dependencies": {}
+}

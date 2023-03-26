@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<!-- saved from url=(0039)http://10.10.10.1:3000/signalk-browser/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>SignalK Browser</title>
+</head>
+<body style="">
+	<div id="gauge" style="display: inline-block; vertical-align:top;"><canvas id="myCanvas" width="794" height="794"></canvas></div>
+
+<script>
+// Defaults:
+var myServerURL = location.protocol + "//" + location.host;
+var vessel = "self";
+var timeOut = 5; // seconds before data is marked 'stale'
+var updatesPerSecond = 1;  // refresh rate
+var sampleSize = 60;
+var maxDepth = 5; // full vertical scale
+
+const depthArray = [];
+
+    
+//
+// Configure your signalk url:port below, like openplotter.myboat.local:3000 or 10.10.10.1:3000
+/*
+myServerURL = "http://10.10.10.1:3000";
+*/
+
+/*
+var myServerURL = "https://cloud.signalk.org:443";
+*/
+
+// end user config
+
+
+var displayFields = [
+	[
+		{ key: 'environment.depth.belowKeel', label: 'DBK' }
+	]
+];
+
+
+var gaugeDiv = document.getElementById('gauge');
+
+// process http parameters
+presentation = 'depth'
+// obsolete:
+parameter_pairs = window.location.search.slice(1).split("&")
+parameter_pairs.forEach(function (item) {
+	if (item.split("=")[0] == "presentation")
+		presentation = item.split("=")[1]
+})
+
+
+function printSignalkDepth(signalkData) {
+	var canvas = document.getElementById("myCanvas");
+    canvas.width = document.documentElement.clientWidth-40;
+    canvas.height = document.documentElement.clientHeight-40;
+    scale = canvas.height / maxDepth
+	var ctx = canvas.getContext("2d");
+
+	// Get data
+	depth = signalkData['environment.depth.belowKeel']['value']
+    
+    if(depthArray.length >= sampleSize){
+        depthArray.pop()
+        }
+    depthArray.unshift(depth)
+
+    // Draw the graph
+    ctx.lineWidth = canvas.width/sampleSize + 1;
+    ctx.strokeStyle = "grey"
+    
+    for(var i = 0; i <= depthArray.length; i++) {
+        //console.log (depthArray[i])
+        ctx.beginPath();
+		ctx.moveTo(canvas.width * (1 - i/sampleSize), canvas.height);
+		ctx.lineTo(canvas.width * (1 - i/sampleSize), canvas.height - (maxDepth - depthArray[i] ) * scale);
+        ctx.stroke();
+    }
+
+	// Write the depth
+	ctx.font = canvas.height / 4 + "px monospace";
+    ctx.fillStyle = "black"
+	ctx.globalCompositeOperation = 'overlay';
+	ctx.textBaseline="center";
+	ctx.textAlign="center";
+	ctx.fillText(depth + " m", canvas.width / 2, canvas.height / 2);
+
+}
+
+
+function httpGetAsync(theUrl, callback) {
+	// get a file through HTTP
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.onreadystatechange = function() {
+		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			callback(xmlHttp.responseText);
+	}
+	xmlHttp.open("GET", theUrl, true); // true for asynchronous
+	xmlHttp.send(null);
+}
+
+
+var units = {}  // holds (path, units) tuplets, derived from the schema definition
+var descriptions = {}  // holds (path, description) tuplets, derived from the schema definition
+
+// get the schema definition file and let onSchema() do what needs to be done with it
+httpGetAsync(myServerURL + "/signalk/v1/api/vessels/" + vessel + "/", onSchema);
+
+function onSchema(responseText) {
+	// respond to the reception of a schema file
+	schema = JSON.parse(responseText);
+	//logDiv.innerHTML = JSON.stringify(schema, null, 2);
+
+	function traverse(jsonObj, path) {
+		// traverse the schema and store the units per path in the dictionary called 'units'
+		if (jsonObj && typeof jsonObj == "object") {
+			Object.keys(jsonObj).forEach(function(key) { // this line thus adapted to support ES5
+				value=jsonObj[key];
+				if (key == 'units' || key == 'description') {
+					elements = path.split(".").splice(1); // split it up
+					elements = elements.filter(function(value, index, arr){
+						return (value != "meta" && value != "properties");   // cut out some elements
+					})
+					elements = elements.join(".");   // stick it together again
+					if (key == 'units')
+						units[elements] = value;	// and poke it in the dictionary
+					else
+						descriptions[elements] = value
+				}
+				else {
+					traverse(value, path + "." + key);
+				}
+			});
+		}
+	}
+
+	traverse (schema, "")
+}
+
+
+// set up the stream of signalk deltas
+var wsURL = myServerURL.replace("http", "ws") + "/signalk/v1/stream?subscribe=none"
+var ws = new WebSocket(wsURL);
+var subscriptionMessage = JSON.stringify({"context": "vessels." + vessel, "subscribe": [{"path": "*"}]});
+ws.onopen = function(event) {ws.send(subscriptionMessage)}
+ws.onclose = function() {
+  console.log("ws close");
+}
+
+var signalkData = {};  // holds the signalk data
+var lastUpdate = Date.now();
+
+ws.onmessage = function(event) {
+	// Process an incoming signalk update message
+	json = JSON.parse(event.data);
+	//logDiv.innerHTML = JSON.stringify(json, null, 2);
+
+	for (var key in json) {
+		if (key == "updates" && json[key][0]['$source'] != 'defaults') {
+			timestamp = Date.parse(json[key][0]['timestamp']);
+			source = json[key][0]['$source'];
+			
+			// Attach sentence to source if available, e.g. " (RMB)"
+			if (json[key][0]['$source'] != 'derived-data') {
+				try {
+					source += " (" + json[key][0]['source']['sentence'] + ")";
+				}
+				catch (error) {}
+			}
+			
+			// loop through all updated paths and store them in the signalk dictionary
+			//  - one version with the source in the key (multiple values per path, for the table)
+			//  - one version with only path in the key (one value per path, might flipflop)
+			values = json[key][0]['values'];
+			for (tuple in values) {
+				path = values[tuple]['path'];
+				value = values[tuple]['value'];
+				entry = {timestamp, source, path, value};
+				
+				// store in the dictionary
+				signalkData[path + source] = entry;  
+				signalkData[path] = entry;  				
+
+			}
+
+			// present the updated dictionary to the screen at the specified refresh rate
+			elapsed = Date.now() - lastUpdate;
+			if (elapsed > 1000/updatesPerSecond) {
+				if (presentation == 'depth' )
+					printSignalkDepth(signalkData);
+				lastUpdate = Date.now();
+			}
+		}
+	}
+}
+
+	</script>
+
+
+</body></html>
