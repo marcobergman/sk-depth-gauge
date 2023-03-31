@@ -93,10 +93,13 @@ function printSignalkDepth(signalkData) {
 	ctx.font = canvas.height / 10 + "px monospace";
 	ctx.textBaseline="bottom";
 
-	information = signalkData['environment.wind.directionCardinal_smooth']['value'] + " " +
-		signalkData['environment.wind.beaufort_smooth']['value'] + " "  
-	ctx.textAlign="left";
-	ctx.fillText(information , 0, canvas.height);
+	try {
+		// For this, install signalk-avg-paths:
+		information = signalkData['environment.wind.directionCardinal_smooth']['value'] + " " +
+			signalkData['environment.wind.beaufort_smooth']['value'] + " "  
+		ctx.textAlign="left";
+		ctx.fillText(information , 0, canvas.height);
+	} catch {}
 
 	information = "STW " + Math.round(signalkData['navigation.speedThroughWater']['value']*10)/10 + " kts" 
 	ctx.textAlign="right"
