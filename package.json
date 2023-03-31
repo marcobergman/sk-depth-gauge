@@ -1,6 +1,6 @@
 {
   "name": "sk-depth-gauge",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Depth gauge with trend graphic",
   "main": "index.js",
   "scripts": {
