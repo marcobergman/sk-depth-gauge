@@ -35,13 +35,6 @@ var myServerURL = "https://cloud.signalk.org:443";
 // end user config
 
 
-var displayFields = [
-	[
-		{ key: 'environment.depth.belowKeel', label: 'DBK' }
-	]
-];
-
-
 var gaugeDiv = document.getElementById('gauge');
 
 // process http parameters
@@ -56,35 +49,42 @@ parameter_pairs.forEach(function (item) {
 
 function printSignalkDepth(signalkData) {
 	var canvas = document.getElementById("myCanvas");
-    canvas.width = document.documentElement.clientWidth-40;
-    canvas.height = document.documentElement.clientHeight-40;
-    scale = canvas.height / maxDepth
+	canvas.width = document.documentElement.clientWidth-40;
+	canvas.height = document.documentElement.clientHeight-40;
+	scale = canvas.height / maxDepth
 	var ctx = canvas.getContext("2d");
 
 	// Get data
 	depth = signalkData['environment.depth.belowKeel']['value']
     
-    if(depthArray.length >= sampleSize){
-        depthArray.pop()
-        }
-    depthArray.unshift(depth)
+	if(depthArray.length >= sampleSize){
+		depthArray.pop()
+	}
+	depthArray.unshift(depth)
 
     // Draw the graph
-    ctx.lineWidth = canvas.width/sampleSize + 1;
-    ctx.strokeStyle = "grey"
+	ctx.lineWidth = canvas.width/sampleSize + 1;
+	ctx.strokeStyle = "lightgrey"
     
-    for(var i = 0; i <= depthArray.length; i++) {
-        //console.log (depthArray[i])
-        ctx.beginPath();
-		ctx.moveTo(canvas.width * (1 - i/sampleSize), canvas.height);
-		ctx.lineTo(canvas.width * (1 - i/sampleSize), canvas.height - (maxDepth - depthArray[i] ) * scale);
-        ctx.stroke();
+	for(var i = 0; i <= depthArray.length; i++) {
+		ctx.beginPath();
+		ctx.moveTo(canvas.width * (1 - (i+0.5)/sampleSize), canvas.height);
+		ctx.lineTo(canvas.width * (1 - (i+0.5)/sampleSize), canvas.height - (maxDepth - depthArray[i] ) * scale);
+		ctx.stroke();
     }
+
+	for (var i = 1; i <= 4; i++) {
+		ctx.lineWidth = 1;
+		ctx.globalCompositeOperation = 'difference';
+		ctx.moveTo (0, i * canvas.height / 5)
+		ctx.lineTo (canvas.width, i * canvas.height / 5)
+		ctx.stroke();
+	}
 
 	// Write the depth
 	ctx.font = canvas.height / 4 + "px monospace";
-    ctx.fillStyle = "black"
-	ctx.globalCompositeOperation = 'overlay';
+	ctx.fillStyle = "black"
+	ctx.globalCompositeOperation = 'source-over';
 	ctx.textBaseline="center";
 	ctx.textAlign="center";
 	ctx.fillText(depth + " m", canvas.width / 2, canvas.height / 2);
