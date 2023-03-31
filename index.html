@@ -71,11 +71,11 @@ function printSignalkDepth(signalkData) {
 		ctx.moveTo(canvas.width * (1 - (i+0.5)/sampleSize), canvas.height);
 		ctx.lineTo(canvas.width * (1 - (i+0.5)/sampleSize), canvas.height - (maxDepth - depthArray[i] ) * scale);
 		ctx.stroke();
-    }
+	}
 
-	for (var i = 1; i <= 4; i++) {
+	for (var i = 1; i < 5; i++) {
 		ctx.lineWidth = 1;
-		ctx.globalCompositeOperation = 'difference';
+		ctx.globalCompositeOperation = 'hard-light';
 		ctx.moveTo (0, i * canvas.height / 5)
 		ctx.lineTo (canvas.width, i * canvas.height / 5)
 		ctx.stroke();
@@ -199,6 +199,5 @@ ws.onmessage = function(event) {
 }
 
 	</script>
-
 
 </body></html>
