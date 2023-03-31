@@ -62,10 +62,9 @@ function printSignalkDepth(signalkData) {
 	}
 	depthArray.unshift(depth)
 
-    // Draw the graph
+	// Draw the graph
 	ctx.lineWidth = canvas.width/sampleSize + 1;
 	ctx.strokeStyle = "lightgrey"
-    
 	for(var i = 0; i <= depthArray.length; i++) {
 		ctx.beginPath();
 		ctx.moveTo(canvas.width * (1 - (i+0.5)/sampleSize), canvas.height);
@@ -73,6 +72,7 @@ function printSignalkDepth(signalkData) {
 		ctx.stroke();
 	}
 
+	// Draw the lines
 	for (var i = 1; i < 5; i++) {
 		ctx.lineWidth = 1;
 		ctx.globalCompositeOperation = 'hard-light';
@@ -88,6 +88,20 @@ function printSignalkDepth(signalkData) {
 	ctx.textBaseline="center";
 	ctx.textAlign="center";
 	ctx.fillText(depth + " m", canvas.width / 2, canvas.height / 2);
+
+	// Write the additional information 
+	ctx.font = canvas.height / 10 + "px monospace";
+	ctx.textBaseline="bottom";
+
+	information = signalkData['environment.wind.directionCardinal_smooth']['value'] + " " +
+		signalkData['environment.wind.beaufort_smooth']['value'] + " "  
+	ctx.textAlign="left";
+	ctx.fillText(information , 0, canvas.height);
+
+	information = "STW " + Math.round(signalkData['navigation.speedThroughWater']['value']*10)/10 + " kts" 
+	ctx.textAlign="right"
+	ctx.fillText(information , canvas.width, canvas.height);
+
 
 }
 
