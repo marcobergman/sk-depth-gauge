@@ -86,7 +86,7 @@ function printSignalkDepth(signalkData) {
 	ctx.globalCompositeOperation = 'source-over';
 	ctx.textBaseline="center";
 	ctx.textAlign="center";
-	ctx.fillText(depth + " m", canvas.width / 2, canvas.height / 2);
+	ctx.fillText(depth.toFixed(1) + " m", canvas.width / 2, canvas.height / 2);
 
 	// Write the additional information 
 	ctx.font = canvas.height / 10 + "px monospace";
@@ -100,7 +100,7 @@ function printSignalkDepth(signalkData) {
 		ctx.fillText(information , 0, canvas.height);
 	} catch {}
 
-	information = "STW " + Math.round(signalkData['navigation.speedThroughWater']['value']*10)/10 + " kts" 
+	information = "STW " + Math.round(signalkData['navigation.speedThroughWater']['value']*3600/1852*10)/10 + " kts" 
 	ctx.textAlign="right"
 	ctx.fillText(information , canvas.width, canvas.height);
 
